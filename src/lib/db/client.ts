@@ -1,4 +1,4 @@
-import type { DbRequest, DbResponse } from './rpc';
+import type { DbRequest, DbResponse, OpRequest } from './rpc';
 
 class DbClient {
   private worker: Worker | null = null;
@@ -14,7 +14,7 @@ class DbClient {
     };
   }
 
-  private call<T = unknown>(req: DbRequest): Promise<T> {
+  private call<T = unknown>(req: DbRequest | OpRequest): Promise<T> {
     this.ensure();
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
@@ -28,6 +28,14 @@ class DbClient {
   select<T = any>(sql: string, params?: unknown[]) { return this.call<T[]>({ kind: 'select', sql, params }); }
   bulk(sql: string, rows: unknown[][]) { return this.call<number>({ kind: 'bulk', sql, rows }); }
   close() { return this.call<null>({ kind: 'close' }); }
+
+  importNcm(rawJson: string) { return this.call<number>({ kind: 'importNcm', rawJson }); }
+  importAttrs(zipData: Uint8Array) { return this.call<number>({ kind: 'importAttrs', zipData }); }
+  search(query: string, classifiableOnly = true) { return this.call<any[]>({ kind: 'search', query, classifiableOnly }); }
+  expand(productId: number, modalidades: string[], mandatoryOnly: boolean, excludedAttrs: string[]) {
+    return this.call<null>({ kind: 'expand', productId, modalidades, mandatoryOnly, excludedAttrs } as any);
+  }
+  expandConditionals(productId: number) { return this.call<null>({ kind: 'expandConditionals', productId }); }
 }
 
 export const db = new DbClient();

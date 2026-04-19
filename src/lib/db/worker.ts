@@ -1,6 +1,6 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { DDL, SCHEMA_VERSION } from './schema';
-import type { DbRequest, DbResponse } from './rpc';
+import type { DbRequest, DbResponse, OpRequest } from './rpc';
 
 let db: any = null;
 
@@ -25,7 +25,7 @@ function toJsonSafe(v: unknown): unknown {
   return v;
 }
 
-self.onmessage = async (ev: MessageEvent<DbRequest & { id: number }>) => {
+self.onmessage = async (ev: MessageEvent<(DbRequest | OpRequest) & { id: number }>) => {
   const { id, ...req } = ev.data;
   const reply = (res: DbResponse) => (self as any).postMessage({ id, ...res });
   try {
@@ -53,6 +53,28 @@ self.onmessage = async (ev: MessageEvent<DbRequest & { id: number }>) => {
       reply({ ok: true, result: req.rows.length });
     } else if (req.kind === 'close') {
       db?.close(); db = null;
+      reply({ ok: true, result: null });
+    } else if (req.kind === 'importNcm') {
+      const { importNcm } = await import('../import/ncm-orchestrator');
+      const runId = await importNcm(db, req.rawJson, new Date().toISOString());
+      reply({ ok: true, result: runId });
+    } else if (req.kind === 'importAttrs') {
+      const { importAttributes } = await import('../import/attr-orchestrator');
+      const runId = await importAttributes(db, req.zipData, new Date().toISOString());
+      reply({ ok: true, result: runId });
+    } else if (req.kind === 'search') {
+      const { searchNcm } = await import('../core/search');
+      reply({ ok: true, result: searchNcm(db, req.query, { classifiableOnly: req.classifiableOnly }) });
+    } else if (req.kind === 'expand') {
+      const { expandAttributesForProduct } = await import('../core/expansion');
+      expandAttributesForProduct(db, req.productId, {
+        modalidades: req.modalidades, mandatoryOnly: req.mandatoryOnly,
+        excludedAttrs: req.excludedAttrs, today: new Date().toISOString().slice(0,10)
+      });
+      reply({ ok: true, result: null });
+    } else if (req.kind === 'expandConditionals') {
+      const { expandConditionalsForProduct } = await import('../core/conditionals');
+      expandConditionalsForProduct(db, req.productId);
       reply({ ok: true, result: null });
     }
   } catch (e: any) {
