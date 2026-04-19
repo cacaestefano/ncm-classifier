@@ -31,4 +31,13 @@ describe('importAttributes', () => {
     const entries = db.selectObjects(`SELECT change_type FROM changelog WHERE update_run_id=?`, [runId]);
     expect(entries.some((e: any) => e.change_type === 'DOMAIN_VALUE_MODIFIED')).toBe(true);
   });
+
+  it('second import with identical data logs no changelog entries', async () => {
+    const db = await freshDb();
+    const raw = readFileSync('tests/fixtures/attrs-sample.json', 'utf8');
+    const zipped = zipSync({ 'data.json': strToU8(raw) });
+    await importAttributes(db, zipped, '2026-04-18T00:00:00Z');
+    const runId = await importAttributes(db, zipped, '2026-04-19T00:00:00Z');
+    expect(db.selectValue('SELECT COUNT(*) FROM changelog WHERE update_run_id=?', [runId])).toBe(0);
+  });
 });
