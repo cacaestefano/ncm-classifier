@@ -1,0 +1,39 @@
+{
+  "versao": 282,
+  "listaNcm": [
+    {
+      "codigoNcm": "0101.21.00",
+      "listaAtributos": [
+        { "codigo": "ATT_9332", "modalidade": "Importação", "obrigatorio": true, "multivalorado": false, "dataInicioVigencia": "2023-11-06", "dataFimVigencia": "9999-12-31" },
+        { "codigo": "ATT_12960", "modalidade": "Importação", "obrigatorio": false, "multivalorado": false, "dataInicioVigencia": "2024-11-13", "dataFimVigencia": "9999-12-31" }
+      ]
+    }
+  ],
+  "detalhesAtributos": [
+    {
+      "codigo": "ATT_9332",
+      "nome": "Material", "nomeApresentacao": "Material de fabricação", "definicao": "Material do produto", "orientacaoPreenchimento": "Selecione",
+      "formaPreenchimento": "LISTA_ESTATICA", "dataInicioVigencia": "2023-11-06", "dataFimVigencia": "",
+      "dominio": [{"codigo":"01","descricao":"Aço"},{"codigo":"02","descricao":"Alumínio"}],
+      "objetivos": [{"codigo":"01","descricao":"Produto"}],
+      "orgaos": ["INMETRO"],
+      "atributoCondicionante": true,
+      "condicionados": [
+        {
+          "codigo": "ATT_9999", "nome": "Specify", "nomeApresentacao": "Especificar outro",
+          "obrigatorio": true, "multivalorado": false, "formaPreenchimento": "TEXTO",
+          "dataInicioVigencia": "2023-11-06", "dataFimVigencia": "9999-12-31",
+          "dominio": [], "objetivos": [], "orgaos": ["INMETRO"],
+          "descricao": "'ATT_9332' Igual '999'"
+        }
+      ]
+    },
+    {
+      "codigo": "ATT_12960",
+      "nome": "Destaque", "nomeApresentacao": "Destaque vaso de pressão", "definicao": "", "orientacaoPreenchimento": "",
+      "formaPreenchimento": "BOOLEANO", "dataInicioVigencia": "2024-11-13", "dataFimVigencia": "",
+      "dominio": [], "objetivos": [], "orgaos": ["INMETRO"],
+      "atributoCondicionante": false, "condicionados": null
+    }
+  ]
+}
