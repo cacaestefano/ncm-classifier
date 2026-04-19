@@ -6,7 +6,7 @@ let db: any = null;
 
 async function init() {
   if (db) return;
-  const sqlite3 = await sqlite3InitModule({ print: () => {}, printErr: console.error });
+  const sqlite3 = await (sqlite3InitModule as any)({ print: () => {}, printErr: console.error });
   // Use OPFS if available, otherwise in-memory
   try {
     db = new sqlite3.oo1.OpfsDb('/ncm-classifier.db', 'ct');

@@ -4,7 +4,7 @@ import { DDL } from '../../src/lib/db/schema';
 
 describe('schema DDL', () => {
   it('creates all tables without errors', async () => {
-    const sqlite3 = await sqlite3InitModule({ print: () => {}, printErr: () => {} });
+    const sqlite3 = await (sqlite3InitModule as any)({ print: () => {}, printErr: () => {} });
     const db = new sqlite3.oo1.DB(':memory:', 'ct');
     for (const stmt of DDL) db.exec(stmt);
     const tables = db.selectObjects(
@@ -21,7 +21,7 @@ describe('schema DDL', () => {
   });
 
   it('FTS index is populated by trigger', async () => {
-    const sqlite3 = await sqlite3InitModule({ print: () => {}, printErr: () => {} });
+    const sqlite3 = await (sqlite3InitModule as any)({ print: () => {}, printErr: () => {} });
     const db = new sqlite3.oo1.DB(':memory:', 'ct');
     for (const stmt of DDL) db.exec(stmt);
     db.exec({
