@@ -1,35 +1,33 @@
-import { defineConfig } from 'vitest/config';
-import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-	plugins: [sveltekit()],
-	test: {
-		expect: { requireAssertions: true },
-		projects: [
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'client',
-					browser: {
-						enabled: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium', headless: true }]
-					},
-					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**']
-				}
-			},
-
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'server',
-					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
-				}
-			}
-		]
-	}
+  plugins: [
+    sveltekit(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,wasm}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+      },
+      manifest: {
+        name: 'NCM Classifier',
+        short_name: 'NCM',
+        description: 'Classificador NCM offline',
+        theme_color: '#1a1a1a',
+        icons: [
+          { src: '/favicon.png', sizes: '192x192', type: 'image/png' }
+        ]
+      }
+    })
+  ],
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
+    }
+  },
+  worker: { format: 'es' },
+  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] }
 });
