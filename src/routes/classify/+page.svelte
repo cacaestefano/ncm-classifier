@@ -8,6 +8,7 @@
   let searchResults = $state<any[]>([]);
   let attrRows = $state<any[]>([]);
   let searchTimer: any = null;
+  let searchGen = 0;
 
   onMount(async () => {
     await project.load();
@@ -16,7 +17,13 @@
 
   async function runSearch() {
     if (!searchQuery.trim()) { searchResults = []; return; }
-    searchResults = await db.search(searchQuery, true);
+    const gen = ++searchGen;
+    try {
+      const r = await db.search(searchQuery, true);
+      if (gen === searchGen) searchResults = r;
+    } catch (e: any) {
+      if (gen === searchGen) alert('Erro na busca: ' + (e?.message ?? e));
+    }
   }
   function onQueryInput() {
     clearTimeout(searchTimer);
@@ -26,29 +33,39 @@
   async function pick(id: number) {
     project.selectedId = id;
     searchResults = []; searchQuery = '';
-    attrRows = await project.attrRowsFor(id);
+    try {
+      attrRows = await project.attrRowsFor(id);
+    } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
 
   async function assign(code: string, description: string) {
     if (!project.selectedId) return;
-    await project.assignNcm(project.selectedId, code, description);
-    attrRows = await project.attrRowsFor(project.selectedId);
+    try {
+      await project.assignNcm(project.selectedId, code, description);
+      attrRows = await project.attrRowsFor(project.selectedId);
+    } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
 
   async function expand() {
     if (!project.selectedId) return;
-    await db.expand(project.selectedId, settings.current.modalidades, settings.current.mandatoryOnly, settings.current.excludedAttrs);
-    attrRows = await project.attrRowsFor(project.selectedId);
+    try {
+      await db.expand(project.selectedId, settings.current.modalidades, settings.current.mandatoryOnly, settings.current.excludedAttrs);
+      attrRows = await project.attrRowsFor(project.selectedId);
+    } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
 
   async function expandConditionals() {
     if (!project.selectedId) return;
-    await db.expandConditionals(project.selectedId);
-    attrRows = await project.attrRowsFor(project.selectedId);
+    try {
+      await db.expandConditionals(project.selectedId);
+      attrRows = await project.attrRowsFor(project.selectedId);
+    } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
 
   async function onValueChange(rowId: number, value: string) {
-    await project.setAttrValue(rowId, value);
+    try {
+      await project.setAttrValue(rowId, value);
+    } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
 
   const currentProduct = $derived(project.products.find(p => p.id === project.selectedId));
@@ -98,7 +115,7 @@
             <tr><th>#</th><th>Atributo</th><th>Obrig.</th><th>Tipo</th><th>Domínio</th><th>Órgão</th><th>Condicional</th><th>Valor</th></tr>
           </thead>
           <tbody>
-            {#each attrRows as r}
+            {#each attrRows as r (r.id)}
               <tr class:conditional={r.source === 'conditional'} class:empty={r.source === 'empty_ncm'}>
                 <td>{r.attr_counter}</td>
                 <td>{r.attr_name ?? '—'}</td>
