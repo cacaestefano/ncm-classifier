@@ -49,7 +49,7 @@
   async function expand() {
     if (!project.selectedId) return;
     try {
-      await db.expand(project.selectedId, settings.current.modalidades, settings.current.mandatoryOnly, settings.current.excludedAttrs);
+      await db.expand(project.selectedId, [...settings.current.modalidades], settings.current.mandatoryOnly, [...settings.current.excludedAttrs]);
       attrRows = await project.attrRowsFor(project.selectedId);
     } catch (e: any) { alert('Erro: ' + (e?.message ?? e)); }
   }
