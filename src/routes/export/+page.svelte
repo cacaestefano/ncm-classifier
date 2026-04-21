@@ -33,6 +33,14 @@
             'attr_regulatory_body','attr_objective','attr_conditional_on','attr_value'];
   }
 
+  function keys(): string[] {
+    return ['unique_id','short_desc','long_desc',
+            'extra_1','extra_2','extra_3','extra_4','extra_5',
+            'ncm_code','ncm_description','attr_counter','attr_code','attr_name',
+            'attr_mandatory','attr_multivalued','attr_fill_type','attr_domain_values',
+            'attr_regulatory_body','attr_objective','attr_conditional_on','attr_value'];
+  }
+
   async function doExport() {
     busy = true;
     try {
@@ -51,7 +59,8 @@
       const date = new Date().toISOString().slice(0, 10);
       const name = settings.current.projectName || 'projeto';
       if (format === 'csv') {
-        const arr = rows.map(r => headers().map(h => (r as any)[h.toLowerCase()] ?? (r as any)[h] ?? ''));
+        const ks = keys();
+        const arr = rows.map(r => ks.map(k => (r as any)[k] ?? ''));
         triggerDownload(toCsv(headers(), arr), `ncm_${name}_${date}.csv`, 'text/csv;charset=utf-8');
       } else {
         const buf = await buildWorkbook(rows, {
