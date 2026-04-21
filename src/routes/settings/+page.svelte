@@ -4,10 +4,12 @@
   import { settings } from '$lib/stores/settings.svelte';
   import { project } from '$lib/stores/project.svelte';
   import { dbStatus } from '$lib/stores/db-status.svelte';
+  import ExcelJS from 'exceljs';
 
   let allAttrs = $state<{codigo: string; nome_apresentacao: string; orgaos_json: string}[]>([]);
   let filterText = $state('');
   let bodyFilter = $state('');
+  let validationOutput = $state('');
 
   onMount(async () => {
     await settings.load();
@@ -62,6 +64,36 @@
       await db.exec('DELETE FROM update_run');
       await dbStatus.refresh();
       alert('Banco apagado');
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
+    }
+  }
+  async function handleValidation(ev: Event) {
+    const f = (ev.target as HTMLInputElement).files?.[0];
+    if (!f) return;
+    try {
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(await f.arrayBuffer() as any);
+      const ref = wb.worksheets[0];
+      const refRows: string[][] = [];
+      ref.eachRow((r) => refRows.push((r.values as any[]).slice(1).map(v => v == null ? '' : String(v))));
+
+      const ourRows = await db.select<any>(`
+        SELECT p.unique_id, r.attr_code, r.attr_counter, r.attr_name, r.attr_mandatory,
+               r.attr_fill_type, r.attr_domain_values, r.attr_regulatory_body
+        FROM project_product p LEFT JOIN project_attr_row r ON r.product_id = p.id
+        ORDER BY p.unique_id, r.attr_counter
+      `);
+      const refKey = (r: string[]) => `${r[0]}|${r[2]}`;
+      const ourKey = (r: any) => `${r.unique_id}|${r.attr_code}`;
+      const refKeys = new Set(refRows.slice(1).map(refKey));
+      const ourKeys = new Set(ourRows.map(ourKey));
+
+      const missing = [...refKeys].filter(k => !ourKeys.has(k));
+      const extra = [...ourKeys].filter(k => !refKeys.has(k));
+      validationOutput = `Ref rows: ${refRows.length - 1}\nOur rows: ${ourRows.length}\n` +
+        `Missing in ours (first 10): ${missing.slice(0, 10).join(', ')}\n` +
+        `Extra in ours (first 10): ${extra.slice(0, 10).join(', ')}`;
     } catch (e: any) {
       alert('Erro: ' + (e?.message ?? e));
     }
@@ -123,6 +155,12 @@
 <h2>Dados</h2>
 <button onclick={clearProject}>Limpar projeto (produtos)</button>
 <button onclick={clearDb}>Limpar banco NCM/atributos</button>
+
+<hr />
+<h2>Modo validação</h2>
+<p>Compara o export do app com um XLSX de referência (gerado pelo VBA).</p>
+<input type="file" accept=".xlsx" onchange={handleValidation} />
+<pre id="validation-output">{validationOutput}</pre>
 
 <style>
   fieldset { margin: 1rem 0; padding: 1rem; }
