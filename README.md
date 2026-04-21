@@ -1,42 +1,30 @@
-# sv
+# NCM Classifier
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Static web app for NCM product classification. Runs entirely in the browser.
 
-## Creating a project
+## Usage
 
-If you're seeing this, you've probably already done this step. Congrats!
+1. Open the hosted URL (once — cached by Service Worker for offline use).
+2. Go to **Banco de Dados**, download the two Siscomex files from the linked URLs, and drag them into the app.
+3. Go to **Importar** and drop your client's product spreadsheet.
+4. Map columns in **Mapear Colunas**.
+5. Search and assign NCMs in **Classificar**, then expand attributes and fill values.
+6. Export in **Exportar**.
 
-```sh
-# create a new project
-npx sv create my-app
+## Development
+
+```
+npm install
+npm run dev             # http://localhost:5173
+npm run test -- --run   # unit + integration
+npx playwright test     # e2e
+npm run build           # produces build/ folder
 ```
 
-To recreate this project with the same configuration:
+## Deployment
 
-```sh
-# recreate this project
-npx sv@0.15.1 create --template minimal --types ts --add eslint prettier vitest="usages:unit,component" playwright sveltekit-adapter="adapter:static" --no-install ncm-app
-```
+The app is deployed to GitLab Pages via `.gitlab-ci.yml` on every push to `main`.
 
-## Developing
+SQLite-WASM uses OPFS, which requires `SharedArrayBuffer`, which requires cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`) on the top-level HTML response. GitLab Pages does not support custom response headers, so the app ships with `static/coi-serviceworker.min.js`, a tiny service worker that reflects both headers on subsequent loads. It is referenced from `src/app.html` and auto-registers on first visit.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+If you move this app to a host that supports custom headers (Cloudflare Pages, Netlify, Vercel), you can remove the `coi-serviceworker.min.js` reference and configure headers directly instead.

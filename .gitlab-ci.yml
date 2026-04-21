@@ -1,0 +1,29 @@
+image: node:20
+
+stages: [test, build, deploy]
+
+cache:
+  paths: [node_modules/]
+
+test:
+  stage: test
+  script:
+    - npm ci
+    - npm run test -- --run
+
+build:
+  stage: build
+  script:
+    - npm ci
+    - BASE_PATH="/$CI_PROJECT_NAME" npm run build
+  artifacts:
+    paths: [build/]
+
+pages:
+  stage: deploy
+  dependencies: [build]
+  script:
+    - mv build public
+  artifacts:
+    paths: [public]
+  only: [main]
