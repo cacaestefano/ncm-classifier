@@ -33,15 +33,27 @@
   function selectAll() { settings.current.excludedAttrs = []; }
   function deselectAll() { settings.current.excludedAttrs = allAttrs.map(a => a.codigo); }
 
-  async function save() { await settings.save(); alert('Salvo'); }
+  async function save() {
+    try {
+      await settings.save();
+      alert('Salvo');
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
+    }
+  }
 
   async function clearProject() {
-    if (confirm('Apagar todos os produtos e classificações? (O banco NCM permanece.)')) {
-      await project.clear(); alert('Projeto apagado');
+    if (!confirm('Apagar todos os produtos e classificações? (O banco NCM permanece.)')) return;
+    try {
+      await project.clear();
+      alert('Projeto apagado');
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
     }
   }
   async function clearDb() {
-    if (confirm('Apagar TODO o banco NCM/atributos? Você precisará reimportar.')) {
+    if (!confirm('Apagar TODO o banco NCM/atributos? Você precisará reimportar.')) return;
+    try {
       await db.exec('DELETE FROM ncm');
       await db.exec('DELETE FROM attribute_def');
       await db.exec('DELETE FROM ncm_attr');
@@ -50,6 +62,8 @@
       await db.exec('DELETE FROM update_run');
       await dbStatus.refresh();
       alert('Banco apagado');
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
     }
   }
 </script>
