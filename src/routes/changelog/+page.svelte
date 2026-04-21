@@ -16,7 +16,7 @@
     'NCMs': ['NCM_ADDED', 'NCM_REMOVED', 'NCM_MODIFIED'],
     'Mapeamentos': ['MAP_ADDED', 'MAP_REMOVED', 'MAP_MODIFIED'],
     'Atributos': ['ATTR_DEF_ADDED', 'ATTR_DEF_REMOVED', 'ATTR_DEF_MODIFIED',
-                  'COND_ADDED', 'COND_REMOVED', 'COND_MODIFIED',
+                  'COND_ADDED', 'COND_REMOVED',
                   'DOMAIN_VALUE_ADDED', 'DOMAIN_VALUE_REMOVED', 'DOMAIN_VALUE_MODIFIED']
   };
 
@@ -36,14 +36,22 @@
       params.push(...projectNcms);
     }
     const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
-    entries = await db.select(`SELECT * FROM changelog ${where} ORDER BY id DESC LIMIT 500`, params);
+    try {
+      entries = await db.select(`SELECT * FROM changelog ${where} ORDER BY id DESC LIMIT 500`, params);
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
+    }
   }
 
   async function doExport() {
-    const all = await db.select<any>(`SELECT * FROM changelog ORDER BY id`);
-    const headers = ['logged_at','update_run_id','change_type','ncm_code','attr_code','field_changed','old_value','new_value'];
-    const rows = all.map(r => headers.map(h => r[h]));
-    triggerDownload(toCsv(headers, rows), `changelog_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+    try {
+      const all = await db.select<any>(`SELECT * FROM changelog ORDER BY id`);
+      const headers = ['logged_at','update_run_id','change_type','ncm_code','attr_code','field_changed','old_value','new_value'];
+      const rows = all.map(r => headers.map(h => r[h]));
+      triggerDownload(toCsv(headers, rows), `changelog_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+    } catch (e: any) {
+      alert('Erro: ' + (e?.message ?? e));
+    }
   }
 </script>
 
