@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { project } from '$lib/stores/project.svelte';
   import { settings } from '$lib/stores/settings.svelte';
 
@@ -45,14 +46,14 @@
     await project.addMany(productRows);
     settings.current.extraLabels = extraLabels;
     await settings.save();
-    goto('/classify');
+    goto(`${base}/classify`);
   }
 </script>
 
 <h1>Mapear Colunas</h1>
 
 {#if headers.length === 0}
-  <p>Nenhum arquivo importado. <a href="/import">Voltar</a>.</p>
+  <p>Nenhum arquivo importado. <a href="{base}/import">Voltar</a>.</p>
 {:else}
   <fieldset>
     <legend>Obrigatórios</legend>

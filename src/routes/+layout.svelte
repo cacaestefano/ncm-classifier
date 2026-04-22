@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { dbStatus } from '$lib/stores/db-status.svelte';
   import { settings } from '$lib/stores/settings.svelte';
@@ -24,7 +25,7 @@
 
 <nav>
   {#each tabs as t}
-    <a href={t.href} class:active={page.url.pathname === t.href}>{t.label}</a>
+    <a href={base + t.href} class:active={page.url.pathname === base + t.href}>{t.label}</a>
   {/each}
   <span class="spacer"></span>
   <span class="status">

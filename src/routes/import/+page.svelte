@@ -1,6 +1,7 @@
 <script lang="ts">
   import ExcelJS from 'exceljs';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
 
   let headers = $state<string[]>([]);
   let preview = $state<string[][]>([]);
@@ -76,7 +77,7 @@
       </tbody>
     </table>
   </div>
-  <button onclick={() => goto('/mapping')}>Continuar → Mapear Colunas</button>
+  <button onclick={() => goto(`${base}/mapping`)}>Continuar → Mapear Colunas</button>
 {/if}
 
 <style>
