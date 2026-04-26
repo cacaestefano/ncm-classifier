@@ -50,13 +50,15 @@ export function parseAttrJson(raw: string): ParsedAttrs {
 
     if (d.atributoCondicionante && Array.isArray(d.condicionados)) {
       for (const c of d.condicionados) {
+        const childCode = c.codigo ?? c.codigoAtributo ?? c.atributoCodigo;
+        if (!childCode) continue;
         const parsed = parseCondition(c.descricao ?? '');
         conditionals.push({
           parent_attr_code: parsed.parent_attr_code || d.codigo,
           condition_desc: c.descricao ?? '',
           parent_operator: parsed.parent_operator,
           parent_value: parsed.parent_value,
-          child_attr_code: c.codigo,
+          child_attr_code: childCode,
           child_nome: c.nome ?? '',
           child_nome_apresentacao: c.nomeApresentacao ?? c.nome ?? '',
           child_obrigatorio: !!c.obrigatorio,
