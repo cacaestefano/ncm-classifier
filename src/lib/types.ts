@@ -1,4 +1,4 @@
-export type NcmLevel = 2 | 4 | 5 | 8;
+export type NcmLevel = 2 | 4 | 5 | 6 | 7 | 8;
 export type Modalidade = 'Importação' | 'Exportação';
 export type FillType =
   | 'LISTA_ESTATICA' | 'BOOLEANO' | 'DATA'

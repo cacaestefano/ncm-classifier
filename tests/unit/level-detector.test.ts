@@ -11,6 +11,12 @@ describe('detectLevel', () => {
   it('returns 5 for subheading codes', () => {
     expect(detectLevel('0101.2')).toBe(5);
   });
+  it('returns 6 for HS subheading codes', () => {
+    expect(detectLevel('0102.21')).toBe(6);
+  });
+  it('returns 7 for 7-digit codes', () => {
+    expect(detectLevel('0102.211')).toBe(7);
+  });
   it('returns 8 for item codes', () => {
     expect(detectLevel('0101.21.00')).toBe(8);
   });
