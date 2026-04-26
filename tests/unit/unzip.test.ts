@@ -10,8 +10,9 @@ describe('extractSingleJson', () => {
     expect(out).toBe(json);
   });
 
-  it('throws if zip has no files', () => {
-    const zipped = zipSync({});
-    expect(() => extractSingleJson(zipped)).toThrow();
+  it('passes raw JSON through when input is not a zip', () => {
+    const json = '{"hello":"world"}';
+    const out = extractSingleJson(strToU8(json));
+    expect(out).toBe(json);
   });
 });

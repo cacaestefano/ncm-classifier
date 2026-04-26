@@ -40,7 +40,7 @@
     await importAttrs(f);
   }
   async function importAttrs(file: File) {
-    busy = true; attrStatus = 'Lendo ZIP...';
+    busy = true; attrStatus = 'Lendo arquivo...';
     try {
       const ab = await file.arrayBuffer();
       attrStatus = 'Descompactando e processando...';
@@ -72,10 +72,10 @@
   </section>
 
   <section ondragover={(e) => e.preventDefault()} ondrop={handleAttrDrop}>
-    <h2>Atributos NCM (ZIP)</h2>
+    <h2>Atributos NCM</h2>
     <a href={ATTR_URL} target="_blank" rel="noopener">Baixar do Siscomex ↗</a>
-    <p>Arraste o arquivo ZIP aqui, ou:</p>
-    <input type="file" accept=".zip" onchange={handleAttrPick} disabled={busy} />
+    <p>Arraste o arquivo JSON ou ZIP aqui, ou:</p>
+    <input type="file" accept=".json,.zip" onchange={handleAttrPick} disabled={busy} />
     {#if attrStatus}<p class="status">{attrStatus}</p>{/if}
   </section>
 </div>
