@@ -1,4 +1,5 @@
 import { db } from '$lib/db/client';
+import { SvelteSet } from 'svelte/reactivity';
 
 export interface ProductRow {
   id: number; unique_id: string; short_desc: string | null; long_desc: string | null;
@@ -10,6 +11,7 @@ export interface ProductRow {
 class ProjectStore {
   products = $state<ProductRow[]>([]);
   selectedId = $state<number | null>(null);
+  selectedIds = new SvelteSet<number>();
 
   async load() {
     await db.init();
@@ -37,11 +39,20 @@ class ProjectStore {
     await db.exec(`DELETE FROM project_product`);
     this.products = [];
     this.selectedId = null;
+    this.selectedIds.clear();
   }
 
   async assignNcm(productId: number, ncm_code: string, ncm_description: string) {
     await db.exec(`UPDATE project_product SET ncm_code=?, ncm_description=? WHERE id=?`,
       [ncm_code, ncm_description, productId]);
+    await this.load();
+  }
+
+  async assignNcmMany(productIds: number[], ncm_code: string, ncm_description: string) {
+    for (const id of productIds) {
+      await db.exec(`UPDATE project_product SET ncm_code=?, ncm_description=? WHERE id=?`,
+        [ncm_code, ncm_description, id]);
+    }
     await this.load();
   }
 
@@ -51,6 +62,20 @@ class ProjectStore {
 
   async setAttrValue(rowId: number, value: string) {
     await db.exec(`UPDATE project_attr_row SET attr_value=? WHERE id=?`, [value, rowId]);
+  }
+
+  async applyAttrValueToProducts(attrCode: string, value: string, productIds: number[]): Promise<number> {
+    if (productIds.length === 0) return 0;
+    const placeholders = productIds.map(() => '?').join(',');
+    await db.exec(
+      `UPDATE project_attr_row SET attr_value=? WHERE attr_code=? AND product_id IN (${placeholders})`,
+      [value, attrCode, ...productIds]
+    );
+    const counted = await db.select<{c:number}>(
+      `SELECT COUNT(*) as c FROM project_attr_row WHERE attr_code=? AND product_id IN (${placeholders})`,
+      [attrCode, ...productIds]
+    );
+    return counted[0]?.c ?? 0;
   }
 }
 
