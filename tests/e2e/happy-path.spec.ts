@@ -16,7 +16,7 @@ test('end-to-end import → classify → export', async ({ page }) => {
   // Drop attrs zip
   const attrsJson = readFileSync('tests/fixtures/attrs-sample.json');
   const zipBuf = Buffer.from(zipSync({ 'data.json': new Uint8Array(attrsJson) }));
-  await page.setInputFiles('input[type=file][accept=".zip"]', {
+  await page.setInputFiles('input[type=file][accept=".json,.zip"]', {
     name: 'attrs.zip', mimeType: 'application/zip', buffer: zipBuf
   });
   await expect(page.getByText(/Importado: 2 atributos/)).toBeVisible({ timeout: 15000 });
