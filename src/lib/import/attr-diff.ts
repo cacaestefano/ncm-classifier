@@ -8,7 +8,7 @@ const DEF_FIELDS: (keyof AttributeDef)[] = [
 const MAP_FIELDS: (keyof NcmAttrMapping)[] = ['obrigatorio', 'multivalorado', 'data_inicio', 'data_fim'];
 
 const mapKey = (m: NcmAttrMapping) => `${m.ncm_code}|${m.attr_code}|${m.modalidade}`;
-const condKey = (c: ConditionalRule) => `${c.parent_attr_code}|${c.child_attr_code}|${c.condition_desc}`;
+const condKey = (c: ConditionalRule) => `${c.parent_attr_code}|${c.child_attr_code}|${c.parent_operator}|${c.parent_value}`;
 
 function diffDomain(
   attrCode: string, oldDom: DomainValue[], newDom: DomainValue[],

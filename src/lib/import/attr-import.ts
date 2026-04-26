@@ -1,4 +1,4 @@
-import type { AttributeDef, NcmAttrMapping, ConditionalRule, FillType } from '../types';
+import type { AttributeDef, NcmAttrMapping, ConditionalRule, ConditionOperator, FillType } from '../types';
 import { parseCondition } from './condition-parser';
 
 export interface ParsedAttrs {
@@ -6,6 +6,37 @@ export interface ParsedAttrs {
   defs: AttributeDef[];
   mappings: NcmAttrMapping[];
   conditionals: ConditionalRule[];
+}
+
+interface CondNode {
+  operador?: string;
+  valor?: string;
+  composicao?: string;
+  condicao?: CondNode;
+}
+
+function mapOperator(op: string | undefined): ConditionOperator {
+  switch (op) {
+    case '==': return 'EQ';
+    case '!=': return 'NEQ';
+    case 'in': case 'IN': return 'IN';
+    case 'preenchido': case 'PREENCHIDO': return 'FILLED';
+    default: return 'UNKNOWN';
+  }
+}
+
+function flattenCondicao(node: CondNode | undefined): { op: ConditionOperator; value: string }[] {
+  const out: { op: ConditionOperator; value: string }[] = [];
+  let cur: CondNode | undefined = node;
+  let onlyOr = true;
+  while (cur) {
+    if (cur.operador !== undefined) {
+      out.push({ op: mapOperator(cur.operador), value: cur.valor ?? '' });
+    }
+    if (cur.composicao && cur.composicao !== '||') onlyOr = false;
+    cur = cur.condicao;
+  }
+  return onlyOr ? out : [];
 }
 
 export function parseAttrJson(raw: string): ParsedAttrs {
@@ -54,12 +85,17 @@ export function parseAttrJson(raw: string): ParsedAttrs {
         const childCode = child.codigo ?? c.codigo;
         if (!childCode) continue;
         const desc = c.descricaoCondicao ?? c.descricao ?? '';
-        const parsed = parseCondition(desc);
-        conditionals.push({
-          parent_attr_code: parsed.parent_attr_code || d.codigo,
-          condition_desc: desc,
-          parent_operator: parsed.parent_operator,
-          parent_value: parsed.parent_value,
+
+        let triggers: { op: ConditionOperator; value: string }[] = [];
+        if (c.condicao) {
+          triggers = flattenCondicao(c.condicao);
+        }
+        if (triggers.length === 0) {
+          const parsed = parseCondition(desc);
+          triggers = [{ op: parsed.parent_operator, value: parsed.parent_value }];
+        }
+
+        const childCommon = {
           child_attr_code: childCode,
           child_nome: child.nome ?? '',
           child_nome_apresentacao: child.nomeApresentacao ?? child.nome ?? '',
@@ -69,7 +105,17 @@ export function parseAttrJson(raw: string): ParsedAttrs {
           child_dominio: child.dominio ?? [],
           child_objetivos: child.objetivos ?? [],
           child_orgaos: child.orgaos ?? []
-        });
+        };
+
+        for (const t of triggers) {
+          conditionals.push({
+            parent_attr_code: d.codigo,
+            condition_desc: desc,
+            parent_operator: t.op,
+            parent_value: t.value,
+            ...childCommon
+          });
+        }
       }
     }
   }
