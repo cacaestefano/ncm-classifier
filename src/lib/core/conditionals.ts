@@ -22,74 +22,76 @@ function serializeDomain(dominioJson: string): string {
 function serializeOrgaos(j: string) { try { return (JSON.parse(j) as string[]).join('; '); } catch { return ''; } }
 function serializeObjetivos(j: string) { try { return (JSON.parse(j) as {codigo:string;descricao:string}[]).map(o => o.descricao).join('; '); } catch { return ''; } }
 
+const MAX_PASSES = 8;
+
 export function expandConditionalsForProduct(db: any, productId: number): void {
   db.transaction(() => {
-    db.exec({ sql: `DELETE FROM project_attr_row WHERE product_id = ? AND source = 'conditional'`, bind: [productId] });
-
-    const parents = db.selectObjects(
-      `SELECT r.id, r.attr_counter, r.attr_code, r.attr_value
-       FROM project_attr_row r
-       JOIN attribute_def d ON d.codigo = r.attr_code
-       WHERE r.product_id = ?
-         AND r.source = 'base'
-         AND d.atributo_condicionante = 1
-         AND COALESCE(r.attr_value,'') <> ''`,
+    const snapshot = db.selectObjects(
+      `SELECT attr_code, attr_value FROM project_attr_row
+       WHERE product_id = ? AND source = 'conditional' AND COALESCE(attr_value,'') <> ''`,
       [productId]
-    ) as any[];
+    ) as { attr_code: string; attr_value: string }[];
+    const savedValues = new Map<string, string>();
+    for (const s of snapshot) savedValues.set(s.attr_code, s.attr_value);
 
-    interface NewChild {
-      afterCounter: number;
-      attr_code: string;
-      attr_name: string;
-      attr_mandatory: string;
-      attr_multivalued: string;
-      attr_fill_type: string;
-      attr_domain_values: string;
-      attr_regulatory_body: string;
-      attr_objective: string;
-      attr_conditional_on: string;
-    }
-
-    const newChildren: NewChild[] = [];
-    for (const p of parents) {
-      const rules = db.selectObjects(
-        `SELECT * FROM conditional WHERE parent_attr_code = ?`,
-        [p.attr_code]
-      ) as any[];
-      for (const r of rules) {
-        if (conditionMatches(r.parent_operator, r.parent_value, p.attr_value)) {
-          newChildren.push({
-            afterCounter: p.attr_counter,
-            attr_code: r.child_attr_code,
-            attr_name: r.child_nome_apresentacao || r.child_nome,
-            attr_mandatory: r.child_obrigatorio ? 'Yes' : 'No',
-            attr_multivalued: r.child_multivalorado ? 'Yes' : 'No',
-            attr_fill_type: r.child_forma_preenchimento,
-            attr_domain_values: serializeDomain(r.child_dominio_json),
-            attr_regulatory_body: serializeOrgaos(r.child_orgaos_json),
-            attr_objective: serializeObjetivos(r.child_objetivos_json),
-            attr_conditional_on: `${r.parent_attr_code} = ${r.parent_value}`
-          });
-        }
-      }
-    }
+    db.exec({ sql: `DELETE FROM project_attr_row WHERE product_id = ? AND source = 'conditional'`, bind: [productId] });
 
     const insert = db.prepare(
       `INSERT INTO project_attr_row(product_id, attr_counter, attr_code, attr_name,
          attr_mandatory, attr_multivalued, attr_fill_type, attr_domain_values,
          attr_regulatory_body, attr_objective, attr_conditional_on, attr_value, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 'conditional')`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'conditional')`
     );
+
     try {
       let tempCounter = 100000;
-      for (const c of newChildren) {
-        insert.bind([
-          productId, c.afterCounter * 1000 + (tempCounter++ - 100000) + 1,
-          c.attr_code, c.attr_name,
-          c.attr_mandatory, c.attr_multivalued, c.attr_fill_type,
-          c.attr_domain_values, c.attr_regulatory_body, c.attr_objective,
-          c.attr_conditional_on
-        ]).stepReset();
+
+      for (let pass = 0; pass < MAX_PASSES; pass++) {
+        const existing = db.selectObjects(
+          `SELECT attr_code FROM project_attr_row WHERE product_id = ?`,
+          [productId]
+        ) as { attr_code: string }[];
+        const have = new Set(existing.map(r => r.attr_code));
+
+        const parents = db.selectObjects(
+          `SELECT r.id, r.attr_counter, r.attr_code, r.attr_value
+           FROM project_attr_row r
+           JOIN attribute_def d ON d.codigo = r.attr_code
+           WHERE r.product_id = ?
+             AND d.atributo_condicionante = 1
+             AND COALESCE(r.attr_value,'') <> ''`,
+          [productId]
+        ) as any[];
+
+        let added = 0;
+        for (const p of parents) {
+          const rules = db.selectObjects(
+            `SELECT * FROM conditional WHERE parent_attr_code = ?`,
+            [p.attr_code]
+          ) as any[];
+          for (const r of rules) {
+            if (have.has(r.child_attr_code)) continue;
+            if (!conditionMatches(r.parent_operator, r.parent_value, p.attr_value)) continue;
+            const savedValue = savedValues.get(r.child_attr_code) ?? '';
+            insert.bind([
+              productId,
+              p.attr_counter * 1000 + (tempCounter++ - 100000) + 1,
+              r.child_attr_code,
+              r.child_nome_apresentacao || r.child_nome,
+              r.child_obrigatorio ? 'Yes' : 'No',
+              r.child_multivalorado ? 'Yes' : 'No',
+              r.child_forma_preenchimento,
+              serializeDomain(r.child_dominio_json),
+              serializeOrgaos(r.child_orgaos_json),
+              serializeObjetivos(r.child_objetivos_json),
+              `${r.parent_attr_code} = ${r.parent_value}`,
+              savedValue
+            ]).stepReset();
+            have.add(r.child_attr_code);
+            added++;
+          }
+        }
+        if (added === 0) break;
       }
     } finally { insert.finalize(); }
 
