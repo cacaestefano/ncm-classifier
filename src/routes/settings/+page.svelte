@@ -10,6 +10,8 @@
   let filterText = $state('');
   let bodyFilter = $state('');
   let validationOutput = $state('');
+  let inspectCode = $state('');
+  let inspectOutput = $state('');
 
   onMount(async () => {
     await settings.load();
@@ -68,6 +70,28 @@
       alert('Erro: ' + (e?.message ?? e));
     }
   }
+  async function inspectAttr() {
+    const code = inspectCode.trim();
+    if (!code) { inspectOutput = ''; return; }
+    try {
+      const def = await db.select<any>(`SELECT codigo, nome_apresentacao, forma_preenchimento, atributo_condicionante FROM attribute_def WHERE codigo = ?`, [code]);
+      const asParent = await db.select<any>(`SELECT parent_attr_code, parent_operator, parent_value, child_attr_code, child_nome_apresentacao, condition_desc FROM conditional WHERE parent_attr_code = ? ORDER BY child_attr_code, parent_value`, [code]);
+      const asChild = await db.select<any>(`SELECT parent_attr_code, parent_operator, parent_value, child_attr_code, child_nome_apresentacao FROM conditional WHERE child_attr_code = ? ORDER BY parent_attr_code, parent_value`, [code]);
+      let out = '— ATTRIBUTE DEF —\n' + JSON.stringify(def[0] ?? null, null, 2) + '\n\n';
+      out += `— AS PARENT (${asParent.length} rules) — what filling ${code} triggers:\n`;
+      for (const r of asParent) {
+        out += `  ${r.parent_operator} '${r.parent_value}' → ${r.child_attr_code} (${r.child_nome_apresentacao})\n      desc: ${r.condition_desc}\n`;
+      }
+      out += `\n— AS CHILD (${asChild.length} rules) — what triggers ${code}:\n`;
+      for (const r of asChild) {
+        out += `  ${r.parent_attr_code} ${r.parent_operator} '${r.parent_value}' → ${code} (${r.child_nome_apresentacao})\n`;
+      }
+      inspectOutput = out;
+    } catch (e: any) {
+      inspectOutput = 'Erro: ' + (e?.message ?? e);
+    }
+  }
+
   async function handleValidation(ev: Event) {
     const f = (ev.target as HTMLInputElement).files?.[0];
     if (!f) return;
@@ -155,6 +179,15 @@
 <h2>Dados</h2>
 <button onclick={clearProject}>Limpar projeto (produtos)</button>
 <button onclick={clearDb}>Limpar banco NCM/atributos</button>
+
+<hr />
+<h2>Inspecionar atributo</h2>
+<p>Digite o código (ex: ATT_14545) para ver definição, regras como pai e como filho.</p>
+<div style="display: flex; gap: 0.5rem;">
+  <input bind:value={inspectCode} placeholder="ATT_xxxxx" />
+  <button onclick={inspectAttr}>Inspecionar</button>
+</div>
+<pre id="inspect-output">{inspectOutput}</pre>
 
 <hr />
 <h2>Modo validação</h2>
