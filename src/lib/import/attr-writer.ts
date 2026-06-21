@@ -7,7 +7,7 @@ export function writeAttributes(db: any, parsed: ParsedAttrs): void {
     db.exec('DELETE FROM attribute_def');
 
     const defStmt = db.prepare(
-      `INSERT INTO attribute_def(codigo, nome, nome_apresentacao, definicao, orientacao_preenchimento,
+      `INSERT OR REPLACE INTO attribute_def(codigo, nome, nome_apresentacao, definicao, orientacao_preenchimento,
          forma_preenchimento, data_inicio, data_fim, dominio_json, objetivos_json, orgaos_json, atributo_condicionante)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
     );
@@ -23,7 +23,7 @@ export function writeAttributes(db: any, parsed: ParsedAttrs): void {
     } finally { defStmt.finalize(); }
 
     const mapStmt = db.prepare(
-      `INSERT INTO ncm_attr(ncm_code, attr_code, modalidade, obrigatorio, multivalorado, data_inicio, data_fim)
+      `INSERT OR REPLACE INTO ncm_attr(ncm_code, attr_code, modalidade, obrigatorio, multivalorado, data_inicio, data_fim)
        VALUES (?,?,?,?,?,?,?)`
     );
     try {
