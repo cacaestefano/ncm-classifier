@@ -43,7 +43,7 @@ export interface NcmAttrMapping {
   data_fim: string;
 }
 
-export type ConditionOperator = 'EQ' | 'NEQ' | 'IN' | 'FILLED' | 'UNKNOWN';
+export type ConditionOperator = 'EQ' | 'NEQ' | 'IN' | 'NOT_IN' | 'FILLED' | 'UNKNOWN';
 
 export interface ConditionalRule {
   parent_attr_code: string;

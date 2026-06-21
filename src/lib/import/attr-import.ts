@@ -26,17 +26,27 @@ function mapOperator(op: string | undefined): ConditionOperator {
 }
 
 function flattenCondicao(node: CondNode | undefined): { op: ConditionOperator; value: string }[] {
-  const out: { op: ConditionOperator; value: string }[] = [];
+  const operators: string[] = [];
+  const values: string[] = [];
+  const joins: string[] = [];
   let cur: CondNode | undefined = node;
-  let onlyOr = true;
   while (cur) {
     if (cur.operador !== undefined) {
-      out.push({ op: mapOperator(cur.operador), value: cur.valor ?? '' });
+      operators.push(cur.operador);
+      values.push(cur.valor ?? '');
     }
-    if (cur.composicao && cur.composicao !== '||') onlyOr = false;
+    if (cur.composicao && cur.condicao) joins.push(cur.composicao);
     cur = cur.condicao;
   }
-  return onlyOr ? out : [];
+  if (operators.length === 0) return [];
+  if (operators.length === 1) return [{ op: mapOperator(operators[0]), value: values[0] }];
+  const allOr = joins.every(c => c === '||');
+  const allAnd = joins.every(c => c === '&&');
+  if (allOr) return operators.map((o, i) => ({ op: mapOperator(o), value: values[i] }));
+  if (allAnd && operators.every(o => o === '!=')) {
+    return [{ op: 'NOT_IN', value: values.join(',') }];
+  }
+  return [];
 }
 
 export function parseAttrJson(raw: string): ParsedAttrs {

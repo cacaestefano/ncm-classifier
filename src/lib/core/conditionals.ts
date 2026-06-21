@@ -6,6 +6,7 @@ function conditionMatches(op: ConditionOperator, triggerValue: string, actualVal
     case 'EQ': return actualValue === triggerValue;
     case 'NEQ': return actualValue !== triggerValue;
     case 'IN': return triggerValue.split(',').map(s => s.trim()).includes(actualValue);
+    case 'NOT_IN': return !triggerValue.split(',').map(s => s.trim()).includes(actualValue);
     case 'FILLED': return actualValue.trim().length > 0;
     case 'UNKNOWN':
     default:
